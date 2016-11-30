@@ -20,7 +20,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <iconUrl>https://cdn.rawgit.com/DarwinJS/ChocoPackages/master/artifactory/appicon.png</iconUrl>
     <dependencies>
-      <dependency id="JDK" />
+      <dependency id="server-jre" />
     </dependencies>
   </metadata>
   <files>

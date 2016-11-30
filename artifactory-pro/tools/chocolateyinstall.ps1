@@ -1,14 +1,14 @@
 
 #Reread Environment In Case JDK dependency just ran
 Update-SessionEnvironment
-
-$url = 'https://bintray.com/artifact/download/jfrog/artifactory-pro/jfrog-artifactory-pro-4.10.0.zip'
+$url = 'https://jfrog.bintray.com/artifactory-pro/org/artifactory/pro/jfrog-artifactory-pro/4.10.0/jfrog-artifactory-pro-4.10.0.zip'
+#$url = 'https://bintray.com/artifact/download/jfrog/artifactory-pro/jfrog-artifactory-pro-4.10.0.zip'
 $checksum = '8c9f110c8f0e0bfe2ce3855e4563ea8c7ed380eddebf5fc01e781bbf4409b757'
 $checksumtype = 'sha256'
 $validExitCodes = @(0)
 
 $packageName= 'artifactory-pro'
-$versionedfolder = 'artifactory-pro-4.10'
+$versionedfolder = 'artifactory-pro-4.10.0'
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 $OSBits = Get-ProcessorBits
@@ -23,7 +23,9 @@ Else
   $PF = $env:ProgramFiles
 }
 
-$TargetFolder = "$PF\artifactory"
+$packageFolder = 'artifactory'
+# Not sure the wisdom of putting an app in a path with spaces
+$TargetFolder = "$PF\$packageFolder"
 $ExtractFolder = "$env:temp\jfrogtemp"
 $servicename = 'artifactory'
 
@@ -31,23 +33,21 @@ If ([bool](Get-Service $servicename -ErrorAction SilentlyContinue))
 {
   Write-Warning "Artifactory is already present, shutting it down so that we can upgrade it."
   Stop-Service $servicename -force
-  pushd "$TargetFolder\bin"
-  Start-ChocolateyProcessAsAdmin "/c `"$TargetFolder\bin\uninstallservice.bat`"" "cmd.exe" -validExitCodes $validExitCodes
-  popd
+  $commandForCmd = "/c `"$TargetFolder\bin\uninstallservice.bat`""
+  Start-ChocolateyProcessAsAdmin $commandForCmd cmd -validExitCodes $validExitCodes
 }
 
 Install-ChocolateyZipPackage -PackageName $packageName -unziplocation "$ExtractFolder" -url $url -checksum $checksum -checksumtype $checksumtype -url64 $url -checksum64 $checksum -checksumtype64 $checksumtype
 
-Rename-Item "$ExtractFolder\$versionedfolder" "$ExtractFolder\artifactory"
-Copy-Item "$ExtractFolder\artifactory" "$PF" -Force -Recurse
-Remove-Item "$ExtractFolder\artifactory" -Force -Recurse
+Rename-Item "$ExtractFolder\$versionedfolder" "$ExtractFolder\$packageFolder"
+Copy-Item "$ExtractFolder\$packageFolder" "$PF" -Force -Recurse
+Remove-Item "$ExtractFolder\$packageFolder" -Force -Recurse
 
 #remove the pause from installservice.bat
 ((Get-Content "$TargetFolder\bin\installservice.bat") -replace '& pause', '') -replace 'pause', ''| Set-Content "$TargetFolder\bin\installservice.bat"
 
-pushd "$TargetFolder\bin"
-Start-ChocolateyProcessAsAdmin "/c `"$TargetFolder\bin\installservice.bat`"" "cmd.exe" -validExitCodes $validExitCodes
-popd
+$commandForCmd = "/c `"$TargetFolder\bin\installservice.bat`""
+Start-ChocolateyProcessAsAdmin $commandForCmd cmd -validExitCodes $validExitCodes
 
 Install-ChocolateyEnvironmentVariable 'ARTIFACTORY_HOME' "$TargetFolder\bin"
 
